@@ -1,0 +1,3 @@
+[submodule "AWS-wildrydes-site"]
+	path = AWS-wildrydes-site
+	url = https://github.com/nduran06/AWS-wildrydes-site
