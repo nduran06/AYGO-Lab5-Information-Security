@@ -292,6 +292,12 @@ cdk init app --language javascript
 
 ![](imgs/sec-36_2.png)  
 
+> ***Observation:** If you see a warning because the version of **Node.js** is higher than the maximum tested version for **cdk**, run the following command to avoid it:*
+
+```
+export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=1
+```
+
 3. Prepare your AWS environment to use cdk; save the default template used by the CDK bootstrap process to a yaml file (bootstrap-template.yaml in this case):
 
 ```
@@ -301,12 +307,6 @@ cdk bootstrap --show-template > bootstrap-template.yaml
 ***Reminder:** The following bootstrap setup is custom, as when you run ```cdk bootstrap```, an AWS CloudFormation stack (CDKToolkit) is created in your account. This stack provides the resources that CDK needs to deploy and manage the infrastructure, and among these resources are IAM roles (which are not currently supported in the AWS Academy account).*
 
 ![](imgs/sec-32.png)  
-
-**Observation:** If you see a warning because the version of *Node.js* is higher than the maximum tested version for cdk, run the following command to avoid this:
-
-```
-export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=1
-```
 
 4. Comment on these *Resorces* (and their features):
 
@@ -320,7 +320,61 @@ export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=1
 
 5. Find the *FileAssetsBucketEncryptionKey* resource, and change the value of *Fn::Sub* from *${FilePublishingRole.Arn}* to "*".
 
-6. Files explanation...
+6. In this cdk, there are three key files:
+
+> **1. [bin/request-unicorn.js](backend/request-unicorn/bin/request-unicorn.js)** (CDK App Entry Point)
+
+This file acts as the entry point for the CDK application. It creates an instance of the RequestUnicornStack. The stack is environment-agnostic by default, meaning it can be deployed to any AWS account/region. The file includes commented options to:
+
+- Specialize the stack for the current CLI configuration
+- Deploy to a specific AWS account and region
+
+
+> **2. [lib/request-unicorn-stack.js](backend/request-unicorn/lib/request-unicorn-stack.js)** (Infrastructure Stack)
+
+The RequestUnicornStack creates a serverless backend with the following components:
+
+- **Lambda Function**: Creates a function using Node.js runtime with code from the [lib/lambda-handler](backend/request-unicorn/lib/lambda-handler/) directory
+- **API Gateway**: Sets up a REST API endpoint that integrates with the Lambda function
+- **DynamoDB Table**: Creates a **Rides** table with the following configuration:
+
+  **- Partition key:** RideId (String)
+
+  **- Billing:** Pay-per-request
+
+  **- Removal policy:** The table will be destroyed when the stack is destroyed
+
+The stack uses a pre-existing IAM role (**LabRole**) for Lambda execution permissions.
+
+
+> **3. [lib/lambda-handler/index.js](backend/request-unicorn/lib/lambda-handler/index.js)** (Lambda Function Handler)
+
+A serverless function that manages unicorn ride requests with the following features:
+
+- **Authentication**: Uses Cognito User Pools for request authorization
+- **Fleet Management**: Maintains a fleet of unicorns with these properties:
+
+  - Name
+  - Color
+  - Gender  
+
+
+* **Key Functionalities:**
+
+  - Generates unique ride IDs
+  - Validates authorized requests
+  - Randomly assigns a unicorn from the fleet
+  - Records ride details in DynamoDB
+  - Returns ride information including ETA (Estimated Time of Arrival)  
+
+
+- **Error handling:**
+
+  - Proper error responses for unauthorized requests
+  - 500 error responses for processing failures
+  - CORS support with appropriate headers
+
+* The function integrates with DynamoDB using the AWS SDK v3 client libraries for storing ride information.
 
 7. Synthesize your CDK application into the AWS CloudFormation template:
 
@@ -448,14 +502,77 @@ aws configure get region
 
 ![](imgs/sec-51.png)
 
-![](imgs/sec-52.png)  
-![](imgs/sec-53.png)  
+7. Set the Resorce details:
+
+- Resource Name: **ride** (the ***/ride*** resource route will be automatically created)
+- Select the **Cross Origin Resource Sharing)** checkbox
+
+8. Select **Create resource**
+
+![](imgs/sec-52.png)
+
+9. With the created **/ride** resource selected, from the **Resources** drop-down menu, select **Create Method**
+
+![](imgs/sec-53.png)
+
+10. Set up the **Mehod details**:
+
+* **Method type:** POST
+* **Integration type:** Lambda function
+* *Enable the **Lambda proxy Integration** option*
+* **Lambda function:** Select your **region** and the Lambda function you previously created
+
 ![](imgs/sec-54.png)  
-![](imgs/sec-55.png)  
-![](imgs/sec-56.png)  
+
+**Region**
+
+Check it by running:
+
+```
+aws configure get region
+```
+
+**Lambda Funtion**
+
+![](imgs/sec-40.png)
+
+11. Set up the **Mehod request settings**:
+
+* **Authorization:** WildRydes (*Select the previously created **Authorizer***)
+
+![](imgs/sec-55.png)
+
+12. Select **Create method**
+
+13. After creating the method, select **Deploy API**
+
+![](imgs/sec-56.png)
+
+14. Set up your API:
+
+* **Stage:** *(Select)* New Stage
+* **Stage name:** prod *(give your stage a name)*
+
+15. Select **Deploy**
+
 ![](imgs/sec-57.png)  
-![](imgs/sec-58.png)  
+
+16. After creating your Stage, you will see the **Invoke URL**; copy it
+
+![](imgs/sec-58.png)
+
+17. Go to the [AWS-wildrydes-site configuration file (js/config.js)](https://github.com/nduran06/AWS-wildrydes-site/blob/main/js/config.js) and assign the **Invoke URL** as the value for the **invokeUrl** attribute:
+
 ![](imgs/sec-59.png)
+
+18. Commit the changes and push it to the repository:
+
+```
+git commit -m "api invokeUrl config"
+```
+```
+git push
+```
 
 ## Test
 
