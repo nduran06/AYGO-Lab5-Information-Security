@@ -1,6 +1,54 @@
 # AYGO-Lab-Information-Security
 
+## Summary
 
+This lab is based on the [AWS Wild Rydes Serverless Workshop](https://aws.amazon.com/en/getting-started/hands-on/build-serverless-web-app-lambda-apigateway-s3-dynamodb-cognito/) with some differences in implementation due to outdated instructions. The original workshop guides you through building a serverless web application where users can request unicorn rides, demonstrating fundamental concepts of cloud computing and serverless architecture.
+
+## Project Description
+
+Wild Rydes is a unique ride-sharing application that connects users with unicorns for their transportation needs.
+
+### Architecture Overview
+
+#### Frontend Layer (AWS Amplify)
+The application's user interface is hosted through AWS Amplify, providing:
+
+- Static web hosting with global content delivery
+- Continuous deployment from your git repository
+- Automatic SSL certificate management
+- Built-in CI/CD pipeline
+
+#### Authentication Layer (Amazon Cognito)
+User management and authentication are handled by Amazon Cognito, offering:
+
+- Secure user registration and sign-in flows
+- Token-based authentication
+- Integration with API Gateway for securing backend resources
+- Session management and token refresh mechanisms
+
+#### API Layer (Amazon API Gateway)
+The API Gateway serves as the application's communication hub:
+
+- RESTful API endpoints for frontend-backend communication
+- Request validation and transformation
+- API key management and usage plans
+- CORS support for web security
+
+#### Business Logic Layer (AWS Lambda)
+AWS Lambda functions implement the core business logic:
+
+- Processing ride requests
+- Matching users with nearby unicorns
+- Managing ride status and updates
+- Handling database operations
+
+#### Data Persistence Layer (Amazon DynamoDB)
+DynamoDB provides a scalable, high-performance database solution:
+
+- NoSQL data storage for ride information
+- Automatic scaling based on demand
+- Consistent performance at any scale
+- Backup and recovery capabilities
 
 ## Prerequisites
 
@@ -9,20 +57,57 @@
 
 **Notes:**
 
-1. This lab used an AWS Academy account; IAM roles are not supported with these account types for performing actions from the CLI.
+1. This lab used an AWS Academy account; IAM roles have limited privileges for this account type.
 
+### AWS-CLI Setup
 
-## AWS-CLI
+- Find your AWS credentials:
+
 ![](imgs/sec-1.png)
 
+* aws_access_key_id
+* aws_secret_access_key
+* aws_session_token
+
 ![](imgs/sec-2.png)  
-![](imgs/sec-3.png)  
+
+* Region name: us-east-1 (in this case)
+
 ![](imgs/sec-4.png)
+
+1. Confugure your AWS CLI credentials:
+
+> - If this is not the first time you are doing this configuration, simply edit the *~/.aws/credentials* file, copying and pasting the values ​​for: *aws_access_key_id*, *aws_secret_access_key*, *aws_session_token*, into it:
+
+```
+nano ~/.aws/credentials
+```
+![](imgs/sec-3.png)  
+
+> - If this is your first time, run:
+
+```
+aws configure
+```
+
 ![](imgs/sec-5.png)
+
+>> Now edit the *~/.aws/credentials* file and add the value for the *aws_session_token* variable.
+
+> - You can verify that it was configured correctly if when running any aws-cli command it does not give you an error, in this case the existing instances are checked
+
+```
+aws ec2 describe-instances
+```
+
 ![](imgs/sec-6.png)
 
+## Prerequisites
 
-## 1. Hosting a static website
+
+## Hands-on: Building a Serverless Web App with Lambda, Apigateway, S3, DynamoDB and Cognito
+
+### 1. Hosting a static website
 
 1. Create a Github repository (including the README.md); in this case is [AWS-wildrydes-site](https://github.com/nduran06/AWS-wildrydes-site)
 
@@ -110,20 +195,84 @@ cd .. && rm -rf aws-serverless-webapp-workshop.git && git pull --rebase
 
 ![](imgs/sec-17.png)  
 
-## 2. Manage users
 
-![](imgs/sec-19.png)  
-![](imgs/sec-20.png)  
+### 2. Manage users
+
+1. Launch the [AWS Console console](https://console.aws.amazon.com/cognito/home) and select the ***Add sign-in and sign-up experiences to your app*** option:
+
+![](imgs/sec-19.png)
+
+2. Set up your application:
+
+> **1. Define your application**
+
+* **Application type:** Single-page application (SPA)
+* **Name your application:** (*Give your app a name*) WildRydesWebApp
+
+> **2. Configure options**
+
+* **Options for sign-in identifiers:** Email, Username
+* **Required attributes for sign-up:** Email
+
+![](imgs/sec-20.png)
+
+>> After creation, you will see the name of the identity pool for your Cognito component, where you can find the users who are registered and can access your application. In this case the name is ***User pool - n6gjqz***.
+
+![](imgs/sec-21_2.png)  
+
+> In the **View quick setup guide** section, find the `cognitoAuthConfig` variable, and save the values ​​for: *region*, *userPoolId*, and *userPoolClientId*:
+
+In `cognitoAuthConfig` you will find the attributes `authority` and `client_id`, with this structure:
+
+* `authority:` `https://cognito-idp-`***region***`-amazonaws.com/`***userPoolId***
+* `client_id:` ***userPoolClientId***
+
 ![](imgs/sec-21.png)  
-![](imgs/sec-22.png)  
-![](imgs/sec-23.png)  
+
+3. Go to the [AWS-wildrydes-site configuration file (js/config.js)](https://github.com/nduran06/AWS-wildrydes-site/blob/main/js/config.js) and assign the above values ​​to the corresponding variables:
+
+![](imgs/sec-22.png)
+
+4. Commit the changes and push it to the repository:
+
+```
+git commit -m "cognito config"
+```
+```
+git push
+```
+![](imgs/sec-23.png)
+
+5. Go to the [wildrydes app](https://main.di8iut3v8urve.amplifyapp.com/), scroll down and click on **GIDDY UP!**:
+
 ![](imgs/sec-24.png)  
-![](imgs/sec-25.png)  
-![](imgs/sec-26.png)  
+
+> You will be redirected to the registration page:
+
+![](imgs/sec-25.png)
+
+6. Register yourself in the app:
+
+![](imgs/sec-26.png)
+
+7. Check your email and enter the confirmation code:
+
 ![](imgs/sec-27.png)  
-![](imgs/sec-28.png)  
+
+> You will see a success/error message:
+
+![](imgs/sec-28.png)
+
+8. Access the app with your registered credentials:
+
 ![](imgs/sec-29.png)
-![](imgs/sec-30.png)  
+
+> You will be see the ride page; the right side you will see a message that says: *You are authenticated. Click to see your <ins>**auth token**</ins>:*
+
+![](imgs/sec-30.png)
+
+9. Click on <ins>**auth token**</ins> and save it as it will be used later:
+
 ![](imgs/sec-31.png)
 
 ## 3. Serverless service backend
@@ -161,5 +310,13 @@ cd .. && rm -rf aws-serverless-webapp-workshop.git && git pull --rebase
 ![](imgs/sec-59.png)
 
 ## Test
-![](imgs/sec-60.png)  
-![](imgs/sec-61.png)  
+
+1. Select a point in the map and click on **Request Unicorn**:
+
+![](imgs/sec-60.png)
+
+> You will see a Unicorn flying to your point *(this request is saved in the DynamoDB-Rides table)*:
+
+![](imgs/sec-61.png)
+
+[![asciicast](imgs/play_icon.gif)](https://pruebacorreoescuelaingeduco-my.sharepoint.com/:v:/g/personal/natalia_duran-v_mail_escuelaing_edu_co/ESaI-zr6-lNFumF4IsNUwhgB4YUFFh9AmmrY4F5BizoZ-Q?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=iXu5aU)
