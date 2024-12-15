@@ -275,31 +275,179 @@ git push
 
 ![](imgs/sec-31.png)
 
-## 3. Serverless service backend
+### 3. Serverless service backend
+
+1. Create a new folder that will be used to create your cdk application:
+
+```
+mkdir request-unicorn && cd request-unicorn
+```
+![](imgs/sec-36_1.png)
+
+2. Initialize the cdk application with javascript as the selected language:
+
+```
+cdk init app --language javascript
+```
+
+![](imgs/sec-36_2.png)  
+
+3. Prepare your AWS environment to use cdk; save the default template used by the CDK bootstrap process to a yaml file (bootstrap-template.yaml in this case):
+
+```
+cdk bootstrap --show-template > bootstrap-template.yaml
+```
+
+***Reminder:** The following bootstrap setup is custom, as when you run ```cdk bootstrap```, an AWS CloudFormation stack (CDKToolkit) is created in your account. This stack provides the resources that CDK needs to deploy and manage the infrastructure, and among these resources are IAM roles (which are not currently supported in the AWS Academy account).*
 
 ![](imgs/sec-32.png)  
+
+**Observation:** If you see a warning because the version of *Node.js* is higher than the maximum tested version for cdk, run the following command to avoid this:
+
+```
+export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=1
+```
+
+4. Comment on these *Resorces* (and their features):
+
+- FilePublishingRole
+- ImagePublishingRole
+- LookupRole
+- FilePublishingRoleDefaultPolicy
+- ImagePublishingRoleDefaultPolicy
+- DeploymentActionRole
+- CloudFormationExecutionRole
+
+5. Find the *FileAssetsBucketEncryptionKey* resource, and change the value of *Fn::Sub* from *${FilePublishingRole.Arn}* to "*".
+
+6. Files explanation...
+
+7. Synthesize your CDK application into the AWS CloudFormation template:
+
+```
+cdk synth
+```
+
 ![](imgs/sec-33.png)  
+
+8. Deploy the application with the ARN of your **AIM role** (in this case *LabRole*):
+
+```
+cdk deploy -r arn:aws:iam::645349541441:role/LabRole
+```
+
 ![](imgs/sec-34.png)  
+
+> You will see the resources that are going to be deployed:
+
 ![](imgs/sec-35.png)  
-![](imgs/sec-36.png)  
-![](imgs/sec-37.png)  
+
+> At the end you will see the URL to access your lambda function:
+
+**<ins>https://orykmyik1c.execute-api.us-east-1.amazonaws.com/prod</ins>**
+
+![](imgs/sec-37.png)
+
+> If you go to the DynamoDB console, to the Tables section, you will see the table created in the cdk configuration: **Rides**
+
 ![](imgs/sec-38.png)  
+
 ![](imgs/sec-39.png)  
-![](imgs/sec-40.png)  
-![](imgs/sec-41.png)  
-![](imgs/sec-42.png)  
+
+9. Go to the Lambda console and select the function previously created with cdk:
+
+![](imgs/sec-40.png)
+
+10. Go to the **Test** section:
+
+![](imgs/sec-41.png)
+
+11. Select:
+
+* **Test event action:** Create new event
+* **Event name:** *(Give your test event a name)* TestRequestEvent
+* Copy and paste the following test event code into the **Event JSON** section:
+
+```
+{
+    "path": "/ride",
+    "httpMethod": "POST",
+    "headers": {
+        "Accept": "*/*",
+        "Authorization": "eyJraWQiOiJLTzRVMWZs",
+        "content-type": "application/json; charset=UTF-8"
+    },
+    "queryStringParameters": null,
+    "pathParameters": null,
+    "requestContext": {
+        "authorizer": {
+            "claims": {
+                "cognito:username": "the_username"
+            }
+        }
+    },
+    "body": "{\"PickupLocation\":{\"Latitude\":47.6174755835663,\"Longitude\":-122.28837066650185}}"
+}
+```
+
+12. Choose **Test**
+
+![](imgs/sec-42.png)
+
+13. Verify that the output of the function contains a `201 statusCode` and is similar to the following:
+
 ![](imgs/sec-43.png)
 
-## 4. Deploy an API RESTful
+### 4. Deploy an API RESTful
 
-![](imgs/sec-44.png)  
-![](imgs/sec-45.png)  
+1. Go to the [Amazon API Gateway console](https://console.aws.amazon.com/apigateway/), and select APIs in the left navigation pane; you will see the API created earlier with cdk: **<ins>UnicornAPI</ins>**; click on it:
+
+![](imgs/sec-44.png)
+
+2. In the left navigation pane, select **Authorizers**:
+
+![](imgs/sec-45.png)
+
+3. Select **Create an authorizer**
+
 ![](imgs/sec-46.png)  
-![](imgs/sec-47.png)  
+
+4. Set these values:
+
+* **Authorizer Name:** *(Give your Authorizer a name)* WildRydes
+* **Authorizer Type:** Cognito
+* **Cognito user pool**
+
+> Select your region, you can check it by running:
+
+```
+aws configure get region
+```
+
+![](imgs/sec-48_1.png)  
+
+> Select the previously created identity pool
+
+![](imgs/sec-21_2.png)  
+
+* **Token source:** Authorization
+
 ![](imgs/sec-48.png)  
-![](imgs/sec-49.png)  
-![](imgs/sec-50.png)  
-![](imgs/sec-51.png)  
+
+> You will see the Authorizer created; access it by clicking on its name:
+
+![](imgs/sec-49.png)
+
+5. In the Token field, paste the token you obtained earlier in the WildRydes app; and select **Test authorizer**:
+
+![](imgs/sec-50.png)
+
+> Verify that you received a `200 code`.
+
+6. In the left navigation pane, select **Resources**, and select **Create resource**:
+
+![](imgs/sec-51.png)
+
 ![](imgs/sec-52.png)  
 ![](imgs/sec-53.png)  
 ![](imgs/sec-54.png)  
